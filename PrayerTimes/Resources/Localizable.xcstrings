@@ -1850,6 +1850,28 @@
         }
       }
     },
+    "Location: %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الموقع: %@"
+          }
+        },
+        "bn": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "অবস্থান: %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konum: %@"
+          }
+        }
+      }
+    },
     "Longitude": {
       "localizations": {
         "ar": {
@@ -2528,6 +2550,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Çık"
+          }
+        }
+      }
+    },
+    "Refresh location": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تحديث الموقع"
+          }
+        },
+        "bn": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "অবস্থান রিফ্রেশ করুন"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konumu yenile"
           }
         }
       }

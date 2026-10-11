@@ -31,6 +31,11 @@ final class SettingsStore {
 
     // Runtime auto-detect state (not persisted).
     private(set) var detectedCoordinates: Coordinates?
+    /// The city of the last successful detection (`CLPlacemark.locality`), shown
+    /// under the coordinates in the menu bar panel. nil until the first
+    /// successful reverse geocode, and preserved (not wiped) when a later
+    /// geocode fails.
+    private(set) var detectedCity: String?
     private(set) var detectedCountryCode: String?
     private(set) var detectedTimeZoneID: String?
     private(set) var isDetectingLocation = false
@@ -135,10 +140,16 @@ final class SettingsStore {
     /// Istanbul default while the first fresh fix is pending. It is rewritten on
     /// every success — only ever a placeholder, never a replacement for a live
     /// fix — so moving house and re-detecting updates it automatically.
+    ///
+    /// `city` is *optional* so a cache written before it existed (no key in the
+    /// JSON) still decodes — the city simply stays empty until the next
+    /// successful detection rewrites it. Internal (not private) so the tests can
+    /// exercise exactly that legacy-decode path.
     struct CachedDetection: Codable {
         var latitude: Double
         var longitude: Double
         var elevation: Double
+        var city: String?
         var countryCode: String?
         var timeZoneID: String?
         var detectedAt: Date
@@ -154,20 +165,22 @@ final class SettingsStore {
             longitude: cached.longitude,
             elevation: cached.elevation
         )
+        detectedCity = cached.city
         detectedCountryCode = cached.countryCode
         detectedTimeZoneID = cached.timeZoneID
     }
 
-    /// Record the current detection so the next launch starts from it. Country
-    /// and timezone are passed in by `detectLocation()` from the *preserved*
-    /// state, so a geocode that failed on its own (no network yet) keeps the
-    /// previously cached values instead of wiping them with nil.
-    private func persistDetection(countryCode: String?, timeZoneID: String?) {
+    /// Record the current detection so the next launch starts from it. City,
+    /// country and timezone are passed in by `detectLocation()` from the
+    /// *preserved* state, so a geocode that failed on its own (no network yet)
+    /// keeps the previously cached values instead of wiping them with nil.
+    private func persistDetection(city: String?, countryCode: String?, timeZoneID: String?) {
         guard let detected = detectedCoordinates else { return }
         let cached = CachedDetection(
             latitude: detected.latitude,
             longitude: detected.longitude,
             elevation: detected.elevation,
+            city: city,
             countryCode: countryCode,
             timeZoneID: timeZoneID,
             detectedAt: Date()
@@ -229,8 +242,9 @@ final class SettingsStore {
             )
             let place = await location.place(for: loc)
             // A cold-start geocode can fail even when the fix succeeded (no
-            // network yet): keep the previous country/timezone rather than
+            // network yet): keep the previous city/country/timezone rather than
             // wiping good — possibly cached — values with nil.
+            detectedCity = place.city ?? detectedCity
             detectedCountryCode = place.countryCode ?? detectedCountryCode
             detectedTimeZoneID = place.timeZone?.identifier ?? detectedTimeZoneID
             if settings.autoDetectMethod, let code = place.countryCode {
@@ -244,7 +258,7 @@ final class SettingsStore {
             }
             // Feed the launch cache so the *next* start (even a cold one) opens
             // on this location instead of the Istanbul default.
-            persistDetection(countryCode: detectedCountryCode, timeZoneID: detectedTimeZoneID)
+            persistDetection(city: detectedCity, countryCode: detectedCountryCode, timeZoneID: detectedTimeZoneID)
         } catch {
             locationError = error.localizedDescription
         }

@@ -101,18 +101,24 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
         }
     }
 
-    /// Reverse-geocoded facts about a location. Both come from a single placemark
-    /// so coordinates, country (→ method) and timezone always describe one place.
+    /// Reverse-geocoded facts about a location. All come from a single placemark
+    /// so coordinates, city, country (→ method) and timezone always describe one
+    /// place.
     struct PlaceInfo: Sendable {
+        var city: String?
         var countryCode: String?
         var timeZone: TimeZone?
     }
 
-    /// Reverse-geocode a location into its country code and timezone. CLGeocoder
-    /// is rate-limited, so we resolve both from one request.
+    /// Reverse-geocode a location into its city, country code and timezone.
+    /// CLGeocoder is rate-limited, so we resolve everything from one request.
     func place(for location: CLLocation) async -> PlaceInfo {
         let placemark = try? await geocoder.reverseGeocodeLocation(location).first
-        return PlaceInfo(countryCode: placemark?.isoCountryCode, timeZone: placemark?.timeZone)
+        return PlaceInfo(
+            city: placemark?.locality,
+            countryCode: placemark?.isoCountryCode,
+            timeZone: placemark?.timeZone
+        )
     }
 
     // MARK: Continuation plumbing
